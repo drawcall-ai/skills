@@ -1,5 +1,5 @@
 ---
-name: gaia-postprocessing
+name: postprocessing
 description: "Set up the postprocessing library — passes, effects, and the correct WebGLRenderer attributes — for fullscreen image effects in Three.js. Use when adding bloom, color grading, or other screen-space visual effects."
 ---
 

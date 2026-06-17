@@ -1,5 +1,5 @@
 ---
-name: gaia-physics
+name: physics
 description: "Add BVH-based physics for static/kinematic geometry with @pmndrs/viverse — physics worlds, character controllers, ground detection, and sensor volumes. Use when a game needs collision, a character controller, or enter/exit trigger volumes."
 ---
 

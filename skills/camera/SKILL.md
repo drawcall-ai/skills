@@ -1,5 +1,5 @@
 ---
-name: gaia-camera
+name: camera
 description: "Build first-person and third-person cameras plus effects (screen shake, FOV speed, rest smoothing) as ECS systems for Three.js games. Use when implementing or tuning camera movement and behavior."
 ---
 

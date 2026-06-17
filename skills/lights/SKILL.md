@@ -1,5 +1,5 @@
 ---
-name: gaia-lights
+name: lights
 description: "Set up lighting for Three.js scenes — choosing light combinations, shadows, and look. Use when configuring scene lighting, fixing flat or harsh lighting, or adding shadows."
 ---
 

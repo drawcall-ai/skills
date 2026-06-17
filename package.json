@@ -1,5 +1,5 @@
 {
-  "name": "gaia-skills",
+  "name": "drawcall-skills",
   "version": "0.1.0",
   "private": true,
   "description": "Installable AI-agent skills for building 3D web games with the drawcall.ai / pmndrs stack (viverse, acta, charta, elics, navcat).",

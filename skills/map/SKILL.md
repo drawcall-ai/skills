@@ -1,5 +1,5 @@
 ---
-name: gaia-map
+name: map
 description: "Create static 3D maps (terrain, rooms, villages, dungeons) with @drawcall/charta via the createMap/editMap natural-language tools, then load locations, placed objects, physics, and navigation from them. Use when building pre-authored environments."
 ---
 

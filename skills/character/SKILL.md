@@ -1,5 +1,5 @@
 ---
-name: gaia-character
+name: character
 description: "Drive animated humanoid characters with @drawcall/acta — state machines, walk/run blending, bone attachments, jumping, and physics via applyMove/applyJump callbacks. Use when a game has a visible player avatar, NPCs, or enemies that need animation."
 ---
 

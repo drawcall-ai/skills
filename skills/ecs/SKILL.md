@@ -1,5 +1,5 @@
 ---
-name: gaia-ecs
+name: ecs
 description: "Structure game state with the EliCS entity-component-system: components, systems, queries, predicates, lifecycle, and the Input/State/View architecture. Use when organizing game logic with multiple interacting objects and state-driven update loops."
 ---
 

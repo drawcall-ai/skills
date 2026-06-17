@@ -1,5 +1,5 @@
 ---
-name: gaia-math
+name: math
 description: "Use Three.js math classes (Vector3, Euler, Quaternion, Matrix4, Spherical) correctly instead of hand-rolled trigonometry, including when to pick Euler vs Quaternion. Use when doing rotations, orbit positioning, or any vector/angle math in a Three.js game."
 ---
 

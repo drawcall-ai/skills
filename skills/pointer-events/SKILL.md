@@ -1,5 +1,5 @@
 ---
-name: gaia-pointer-events
+name: pointer-events
 description: "Forward DOM pointer events into a Three.js scene and filter them with @pmndrs/pointer-events for click/tap/hover interaction with 3D objects and portals. Use when objects in the scene need to be clickable, selectable, or hoverable."
 ---
 

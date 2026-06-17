@@ -1,5 +1,5 @@
 ---
-name: gaia-assets
+name: assets
 description: "Choose and use the right asset-creation tool for a 3D web game — createModel, createMap, createCharacter, createImage, createSpeech, createMusic, createSoundEffect. Use when adding props, environments, characters, UI images, voice, music, or sound effects."
 ---
 

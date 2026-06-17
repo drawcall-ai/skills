@@ -1,5 +1,5 @@
 ---
-name: gaia-navigation
+name: navigation
 description: "Generate navigation meshes and find paths for AI agents with navcat and navcat/three, including all generation parameters and the recast-style pipeline. Use when adding pathfinding or AI navigation over Three.js geometry."
 ---
 

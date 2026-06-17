@@ -1,5 +1,5 @@
 ---
-name: gaia-actions
+name: actions
 description: "Map player input (keyboard, mouse, touch, gamepad) to game logic with the @pmndrs/viverse action/binding system. Use when building movement controls, input handling, or custom state/event actions for a Three.js game."
 ---
 
