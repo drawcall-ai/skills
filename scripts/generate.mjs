@@ -29,12 +29,6 @@ const META = [
       'Map player input (keyboard, mouse, touch, gamepad) to game logic with the @pmndrs/viverse action/binding system. Use when building movement controls, input handling, or custom state/event actions for a Three.js game.',
   },
   {
-    name: 'assets',
-    source: 'assets.md',
-    description:
-      'Choose and use the right asset-creation tool for a 3D web game — createModel, createMap, createCharacter, createImage, createSpeech, createMusic, createSoundEffect. Use when adding props, environments, characters, UI images, voice, music, or sound effects.',
-  },
-  {
     name: 'camera',
     source: 'camera.md',
     description:

@@ -26,7 +26,6 @@ npx skills add drawcall-ai/skills --skill camera --skill physics
 | Skill | What it covers |
 | ----- | -------------- |
 | `actions` | Input → binding → action system (`@pmndrs/viverse`) |
-| `assets` | Picking asset-creation tools (models, maps, characters, audio, images) |
 | `camera` | First/third-person cameras and camera effects |
 | `character` | Animated humanoid characters (`@drawcall/acta`) |
 | `ecs` | Entity-component-system architecture (`elics`) |
