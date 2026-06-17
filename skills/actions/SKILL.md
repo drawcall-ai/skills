@@ -20,7 +20,7 @@ Actions decouple inputs from game logic. Bindings translate hardware events into
 | ------------------------------------------------------------------------------ | ----- | ----------------------------------------------------------------------------------------- |
 | `MoveForwardAction`, `MoveBackwardAction`, `MoveLeftAction`, `MoveRightAction` | State | Movement (0–1) — read with `.get()` each frame                                            |
 | `RunAction`                                                                    | State | Sprint toggle — read with `.get()` each frame                                             |
-| `JumpAction`                                                                   | Event | Jump trigger — use `.subscribe()`, see [character.md](./character.md#jumping-and-falling) |
+| `JumpAction`                                                                   | Event | Jump trigger — use `.subscribe()` |
 | `RotateYawAction`, `RotatePitchAction`                                         | Event | Ready-to-use rotation delta (radians) — use `.subscribe()` and accumulate                 |
 | `ZoomAction`                                                                   | Event | Camera zoom delta — use `.subscribe()`                                                    |
 
