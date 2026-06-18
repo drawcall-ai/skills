@@ -82,3 +82,21 @@ Additionally, make sure to call `csm.update()` in your render loop to keep shado
 - **AmbientLight**: `0.3–0.6` (fill light)
 - **CSM lightIntensity**: `1–3` (sun-like, affects entire scene)
 - **PointLight / SpotLight**: `1–5` with reasonable `distance` (e.g. `10–50`)
+
+## Runtime cost: keep the light set fixed
+
+Three.js bakes the **number** of lights (and of shadow-casting lights) into every material's shader. Adding or removing a light — or toggling a light's `castShadow` — at runtime forces a **recompile of all materials**, which stalls the frame. Spawning a light per effect (a muzzle flash, an explosion) produces a visible hitch on every shot.
+
+- Decide the light rig once at startup and keep the count fixed.
+- For muzzle flashes, explosions, and pulses, **do not add a light**. Animate the `intensity`/`color` of one pre-created, normally-dim light, or fake the glow with an emissive material or an additive sprite. If you genuinely need moving light sources, pool a few reusable ones created up front.
+- The same applies to materials: changing a material's *defines* (e.g. adding/removing a map) recompiles too — prefer animating a uniform or `color`.
+
+## Environment lighting (IBL) for a non-flat look
+
+Ambient-only or hemisphere-only lighting looks flat and gray because nothing gives surfaces form. What reads as "a real place" is image-based fill + a sun + textured materials:
+
+- Set `scene.environment` from an HDR (Market `environment` assets ship one) so materials pick up real image-based reflections and fill light.
+- Add one directional/CSM "sun" for shape and shadows.
+- Tone-map the HDR range with `renderer.toneMapping = ACESFilmicToneMapping` and exposure ~1.
+
+Flat ambient light + solid-color (untextured) materials is exactly the "gray clay" look — fix it with IBL, a sun, and real textures (see the `materials` skill).
