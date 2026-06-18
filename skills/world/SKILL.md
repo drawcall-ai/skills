@@ -13,6 +13,8 @@ Pick the world size from how the player moves. A third-person shooter map you sp
 ## Shape the ground
 Outdoor ground is almost never flat — a flat plane is the clearest "unfinished prototype" tell after untextured gray. Give the terrain real shape: displace a subdivided plane's vertices with layered noise (a few octaves of value/simplex noise) for hills, slopes, and valleys, or drive it from a heightmap. Carve in readable landmarks — a ridge, a basin, some high ground — so the space has tactical variety, then call `geometry.computeVertexNormals()` so lighting follows the shape. Keep collision and the navmesh aligned to the *shaped* terrain, not a separate flat floor underneath.
 
+The terrain is a surface like any other — it needs a real material, not a solid color (see the `materials` skill). Apply a tiled ground texture, and for a large map blend it by slope and height (grass on flat ground, rock/cliff on steep slopes, sand at the shoreline) so the whole map doesn't read as one flat green sheet.
+
 ## Give the world distance
 The eye reads scale from depth cues — provide all three so the world has a horizon instead of an edge:
 - **Horizon:** a skybox / environment background or a distant terrain silhouette, so the ground never ends at a hard line.
