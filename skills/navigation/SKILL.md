@@ -514,6 +514,14 @@ The `crowd` API in `navcat/blocks` provides high-level agent simulation:
 
 For simple use cases, use it directly. For advanced use cases, copy it into your project and modify as needed.
 
+### Keep a crowd from clumping
+
+When many agents chase one target (enemies swarming the player, units ordered to a point), they pile into a single overlapping blob unless you let the crowd hold them apart:
+
+- Give each agent a **radius** matching its body and let the crowd's agent-to-agent avoidance maintain spacing. Do **not** hand-set every agent's velocity straight at the same point each frame — that overrides avoidance and stacks them on top of each other.
+- For a natural look, make a group **surround** the target instead of converging on its exact center: give each agent a goal offset on a ring around the target (spread by index/angle), so they encircle it rather than fighting for one spot.
+- Tune avoidance strength and max acceleration so agents slide around each other smoothly rather than jittering or interpenetrating.
+
 ## Debug Visualization with Three.js
 
 The `navcat/three` entrypoint provides helpers for visualizing navmesh data:
