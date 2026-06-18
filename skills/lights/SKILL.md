@@ -100,3 +100,16 @@ Ambient-only or hemisphere-only lighting looks flat and gray because nothing giv
 - Tone-map the HDR range with `renderer.toneMapping = ACESFilmicToneMapping` and exposure ~1.
 
 Flat ambient light + solid-color (untextured) materials is exactly the "gray clay" look — fix it with IBL, a sun, and real textures (see the `materials` skill).
+
+### The visible sky must be an equirectangular skybox, not a flat image
+
+To show the sky behind the scene, assign the equirectangular panorama to `scene.background` **and set its mapping**, so Three.js wraps it around the world as a skybox that stays put as the camera turns:
+
+```typescript
+const sky = await new TextureLoader().loadAsync('/environment/<name>-background.webp')
+sky.mapping = EquirectangularReflectionMapping // without this it renders as a flat 2D screen image
+sky.colorSpace = SRGBColorSpace
+scene.background = sky
+```
+
+Never parent a sky image to the camera — that pins a flat picture to the view instead of giving the world a real horizon.
