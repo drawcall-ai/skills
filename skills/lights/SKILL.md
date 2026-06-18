@@ -20,64 +20,60 @@ Ambient light controls shadow appearance—without it, shadows are pure black. E
 
 Use AmbientLight + CSM (Cascading Shadow Maps). CSM replaces DirectionalLight with superior shadow quality out of the box—no need to manually configure shadow camera bounds.
 
-A lone `DirectionalLight` has a single shadow map covering one fixed frustum: over a large outdoor map its shadows are either blurry (one map stretched across hundreds of meters) or simply missing past a short range. **For any outdoor or large scene, use CSM** — its cascades keep shadows crisp from right next to the camera out to the horizon. Don't light a big map with a lone `DirectionalLight` and a small shadow frustum. The CSM setup below is worth the few extra lines.
+A lone `DirectionalLight` has a single shadow map covering one fixed frustum: over a large outdoor map its shadows are either blurry (one map stretched across hundreds of meters) or simply missing past a short range. **For any outdoor or large scene, use CSM** — its cascades keep shadows crisp from right next to the camera out to the horizon. A lone `DirectionalLight` with a small shadow frustum on a big map is wrong.
+
+CSM looks like a lot of setup, but it is **paste-once boilerplate** — drop this helper in unchanged, then call `createCsmSun(...)` once and `csm.update()` every frame. That is the whole cost; don't trade it for a plain `DirectionalLight`.
 
 ```typescript
 import { CSM } from 'three/examples/jsm/csm/CSM.js'
-import { Material } from 'three'
+import { Material, Vector3 } from 'three'
 
-// Required to enable shadows
-renderer.shadowMap.enabled = true
+// Paste-once: an outdoor sun with cascaded shadows. Returns the csm; call csm.update() each frame.
+function createCsmSun(scene, camera, renderer, lightDirection = new Vector3(-1, -2, -1), intensity = 2, maxFar = 200) {
+  renderer.shadowMap.enabled = true // do NOT also set shadowMap.type = PCFSoftShadowMap with CSM
 
-//DO NOT use this with csm: renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  const csm = new CSM({
+    cascades: 4, lightDirection: lightDirection.clone().normalize(),
+    camera, parent: scene, lightIntensity: intensity, maxFar, mode: 'practical',
+  })
+  csm.fade = true
 
-const ambient = new THREE.AmbientLight(0xffffff, 0.4)
-scene.add(ambient)
+  const biases = [-0.00001, -0.0001, -0.0003, -0.0006]
+  const normalBiases = [0.02, 0.06, 0.16, 0.3]
+  csm.lights.forEach((light, i) => {
+    light.shadow.bias = biases[i] ?? -0.0006
+    light.shadow.normalBias = normalBiases[i] ?? 0.3
+  })
 
-const sunPosition = new THREE.Vector3(10, 20, 10)
-
-const csm = new CSM({
-  cascades: 4,
-  lightDirection: sunPosition.clone().negate(),
-  camera: camera,
-  parent: scene,
-  lightIntensity: 2,
-  maxFar: 200,
-  mode: 'practical',
-})
-csm.fade = true
-
-// Required to prevent shadow acne
-const biases = [-0.00001, -0.0001, -0.0003, -0.0006]
-const normalBiases = [0.02, 0.06, 0.16, 0.3]
-csm.lights.forEach((light, i) => {
-  light.shadow.bias = biases[i] ?? biases.at(-1)!
-  light.shadow.normalBias = normalBiases[i] ?? normalBiases.at(-1)!
-})
-
-// Required to setup CSM for any material at render time
-const csmMaterials = new WeakSet<Material>()
-const originalRenderBufferDirect = renderer.renderBufferDirect.bind(renderer)
-renderer.renderBufferDirect = function (camera, scene, geometry, material, object, group) {
-  if (material && !csmMaterials.has(material)) {
-    csmMaterials.add(material)
-    const originalOnBeforeCompile = material.onBeforeCompile
-    csm.setupMaterial(material)
-    // Chain CSM's onBeforeCompile with any existing one
-    if (material.onBeforeCompile !== originalOnBeforeCompile) {
-      const csmOnBeforeCompile = material.onBeforeCompile
-      material.onBeforeCompile = function (...args) {
-        originalOnBeforeCompile.apply(this, args)
-        csmOnBeforeCompile.apply(this, args)
+  // CSM must inject its shader into every material; do it lazily at render time.
+  const done = new WeakSet<Material>()
+  const original = renderer.renderBufferDirect.bind(renderer)
+  renderer.renderBufferDirect = function (cam, sc, geom, material, object, group) {
+    if (material && !done.has(material)) {
+      done.add(material)
+      const prev = material.onBeforeCompile
+      csm.setupMaterial(material)
+      if (material.onBeforeCompile !== prev) {
+        const csmHook = material.onBeforeCompile
+        material.onBeforeCompile = (...args) => { prev.apply(material, args); csmHook.apply(material, args) }
       }
     }
+    return original(cam, sc, geom, material, object, group)
   }
-  return originalRenderBufferDirect(camera, scene, geometry, material, object, group)
+  return csm
 }
 ```
 
-Make sure to enable the shadow map, do not use `PCFSoftShadowMap`, set the biases to prevent shadow acne, and setup the `renderBufferDirect` to prepare the materials for CSM.
-Additionally, make sure to call `csm.update()` in your render loop to keep shadows aligned with the camera.
+Use it:
+
+```typescript
+scene.add(new THREE.AmbientLight(0xffffff, 0.4)) // fill, so shadows aren't pure black
+const csm = createCsmSun(scene, camera, renderer)
+// in the render loop, BEFORE renderer.render(...):
+csm.update()
+```
+
+Forgetting `csm.update()` is the one easy mistake — shadows then won't follow the camera.
 
 ## Intensity
 
