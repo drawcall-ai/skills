@@ -1,9 +1,11 @@
 ---
 name: postprocessing
-description: "Set up the postprocessing library — passes, effects, and the correct WebGLRenderer attributes — for fullscreen image effects in Three.js. Use when adding bloom, color grading, or other screen-space visual effects."
+description: "Finish a 3D scene's look with the postprocessing library — a tasteful pass (ambient occlusion, subtle bloom, tone mapping, color grading) plus the correct WebGLRenderer attributes. Use to make a scene read as a polished game rather than a raw render, or for any screen-space image effect."
 ---
 
 # Post Processing via `postprocessing`
+
+A correct render of good geometry still looks unfinished without a finishing pass — that flat, raw look. A light, tasteful pass is part of a polished game's look, not an optional extra: **ambient occlusion** to ground objects in contact shadow, a **subtle bloom** so emissive and bright things glow, and **tone mapping + a gentle color grade** to set mood. Add it once the scene reads correctly, and keep it restrained — heavy bloom or crushed grading looks worse than none.
 
 Post processing introduces the concept of passes and effects to extend the common rendering workflow with fullscreen image manipulation tools. The following WebGL attributes should be used for an optimal post processing workflow:
 
