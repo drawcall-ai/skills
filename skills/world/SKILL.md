@@ -10,6 +10,9 @@ A world feels small for three fixable reasons: it is physically small, it ends a
 ## Size to the experience
 Pick the world size from how the player moves. A third-person shooter map you sprint across for a minute is roughly 300–1000m wide, not ~150m. Place points of interest far enough apart that traveling between them takes real seconds.
 
+## Shape the ground
+Outdoor ground is almost never flat — a flat plane is the clearest "unfinished prototype" tell after untextured gray. Give the terrain real shape: displace a subdivided plane's vertices with layered noise (a few octaves of value/simplex noise) for hills, slopes, and valleys, or drive it from a heightmap. Carve in readable landmarks — a ridge, a basin, some high ground — so the space has tactical variety, then call `geometry.computeVertexNormals()` so lighting follows the shape. Keep collision and the navmesh aligned to the *shaped* terrain, not a separate flat floor underneath.
+
 ## Give the world distance
 The eye reads scale from depth cues — provide all three so the world has a horizon instead of an edge:
 - **Horizon:** a skybox / environment background or a distant terrain silhouette, so the ground never ends at a hard line.
@@ -19,7 +22,10 @@ The eye reads scale from depth cues — provide all three so the world has a hor
 Set the camera `far` plane past the fog's far distance so nothing pops in, and keep `near` reasonable (e.g. 0.1) for depth precision.
 
 ## Fill it without tanking the framerate
-Density is what makes a world believable, but naive copies kill performance. Use `InstancedMesh` for repeated props (trees, rocks, grass), and skip or simplify (LOD) distant instances.
+Density is what makes a world believable; an empty ground between a handful of props reads as a prototype. Scatter dense detail — grass tufts, rocks, bushes, debris — across the terrain, and cluster props into *places* (an outpost, a copse of trees) rather than dotting them evenly. Naive copies kill the framerate, so use `InstancedMesh` for the repeated detail and skip or simplify (LOD) distant instances.
 
 ## Keep scale consistent
 Author everything in meters against the character's height (~1.8m). A tree the size of the player, or a crate the size of a house, breaks the sense of place faster than anything else.
+
+## Finish the image
+A raw render of correct geometry still looks flat. A light postprocessing pass — subtle bloom, ambient occlusion to ground objects, and gentle color grading (see the `postprocessing` skill) — is often what separates "a polished game" from "a tech demo". Add it once the scene reads correctly, not before.
