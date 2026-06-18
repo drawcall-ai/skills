@@ -107,7 +107,7 @@ RotateYawAction.subscribe(
 camera.rotation.copy(new Euler(pitch, yaw, 0, 'YXZ'))
 ```
 
-> **Convention**: Positive pitch rotates up, positive yaw rotates left. Use `Euler(pitch, yaw, 0, 'YXZ')` order — see `/docs/camera.md` for camera patterns.
+> **Convention**: Positive pitch rotates up, positive yaw rotates left. Use `Euler(pitch, yaw, 0, 'YXZ')` order — see the camera skill for camera patterns.
 
 ### Touch (Pointer Capture)
 

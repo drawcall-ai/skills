@@ -5,7 +5,7 @@ description: "Build first-person and third-person cameras plus effects (screen s
 
 # Camera
 
-Inspiration for building camera movement and behavior. All examples use minimal ECS systems — see `/docs/entity-component-system.md` for the full pattern.
+Inspiration for building camera movement and behavior. All examples use minimal ECS systems — see the entity-component-system skill for the full pattern.
 
 **Convention**: Positive pitch = look up, positive yaw = look left. Use `Euler(pitch, yaw, 0, 'YXZ')` order.
 
@@ -42,7 +42,7 @@ export class FirstPersonCameraSystem extends createSystem({}) {
 
 ## Third Person Camera
 
-Uses `Spherical` for orbit positioning — see `/docs/math.md`.
+Uses `Spherical` for orbit positioning — see the math skill.
 
 ```typescript
 export class ThirdPersonCameraSystem extends createSystem({}) {
