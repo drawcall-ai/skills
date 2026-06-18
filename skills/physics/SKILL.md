@@ -31,7 +31,7 @@ world.addBody(train, true)
 
 ## Character Controller
 
-`BvhCharacterPhysics` is the character controller — it moves and collides the character body. It does **not** animate the character and is not a camera. For a full controllable humanoid, compose it with `CharacterCameraBehavior` (camera) and Acta (all animation): see **[character.md](./character.md)**. Do not use `SimpleCharacter` — it bundles its own animation that conflicts with Acta.
+`BvhCharacterPhysics` is the character controller — it moves and collides the character body. It does **not** animate the character and is not a camera. For a full controllable humanoid, compose it with `CharacterCameraBehavior` (camera) and Acta for **all** animation and the motion it produces (see the **acta** skill). Do not use `SimpleCharacter` — it bundles its own animation that conflicts with Acta.
 
 Creating a character controller
 
@@ -48,7 +48,7 @@ characterPhysics.inputVelocity.copy(velocity) // continuous (walking) — set ea
 characterPhysics.applyVelocity(jumpImpulse) // one-off impulse (e.g. jumping)
 ```
 
-> For an Acta character, **do not set `inputVelocity` from raw input.** Acta produces the velocity from the active animation and hands it to you in its `motion` callback — set `inputVelocity` from that desired velocity and step the controller there. You pass Acta only a movement *intent* (camera-relative direction + amount). See [character.md](./character.md).
+> For an Acta character the path of information is **input → Acta → physics**: you pass Acta a movement *intent* (a camera-relative `moveDirection`, length 0..1), Acta turns the active animation into a desired velocity and hands it to you in its `motion` callback, and you set `inputVelocity` from that velocity and step the controller there. **Do not set `inputVelocity` from raw input**, and do not move the character anywhere else. See the **acta** skill.
 
 ### Updating the controller
 

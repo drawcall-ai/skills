@@ -18,7 +18,7 @@ const cameraBehavior = new CharacterCameraBehavior() // third-person orbit + col
 cameraBehavior.update(camera, characterModel, delta, (ray, far) => world.raycast(ray, far)?.distance)
 ```
 
-Options cover `rotation` (`minPitch`/`maxPitch`/`minYaw`/`maxYaw`/`speed`), `zoom` (`minDistance`/`maxDistance`/`speed`), `collision`, and `characterBaseOffset`. Pass `FirstPersonCharacterCameraBehavior` for a first-person rig. It composes with `BvhCharacterPhysics` (movement) and Acta (animation) — see the physics skill's [character.md](../physics/character.md). Movement and aiming derive from the camera's facing (`camera.getWorldDirection`), so they include pitch and strafe the correct way.
+Options cover `rotation` (`minPitch`/`maxPitch`/`minYaw`/`maxYaw`/`speed`), `zoom` (`minDistance`/`maxDistance`/`speed`), `collision`, and `characterBaseOffset`. Pass `FirstPersonCharacterCameraBehavior` for a first-person rig. It composes with `BvhCharacterPhysics` (movement) and Acta (animation) — see the **acta** and **physics** skills. Movement and aiming derive from the camera's facing (`camera.getWorldDirection`), so they include pitch and strafe the correct way; the path of information is input → Acta → physics.
 
 ## Building a camera from scratch
 
