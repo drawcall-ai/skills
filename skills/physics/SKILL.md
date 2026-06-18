@@ -31,6 +31,8 @@ world.addBody(train, true)
 
 ## Character Controller
 
+`BvhCharacterPhysics` is the character controller — it moves and collides the character body. It does **not** animate the character and is not a camera. For a full controllable humanoid, compose it with `CharacterCameraBehavior` (camera) and Acta (all animation): see **[character.md](./character.md)**. Do not use `SimpleCharacter` — it bundles its own animation that conflicts with Acta.
+
 Creating a character controller
 
 ```ts
@@ -39,16 +41,14 @@ import { BvhCharacterPhysics, type BvhCharacterPhysicsOptions } from '@pmndrs/vi
 const characterPhysics = new BvhCharacterPhysics(world)
 ```
 
-Applying velocity
+Driving it
 
 ```ts
-characterPhysics.applyVelocity(vec3) // once (e.g. jumping)
-characterPhysics.inputVelocity.set(0, 0, 0) // continuous (e.g. walking)
+characterPhysics.inputVelocity.copy(cameraRelativeWish) // continuous (walking) — set each frame
+characterPhysics.applyVelocity(jumpImpulse) // one-off impulse (e.g. jumping)
 ```
 
-> For animated humanoid characters, do NOT set `inputVelocity` directly!
-> Use the `applyMove` callback pattern instead — see [character.md](./character.md).
-> Direct velocity setting causes characters to slide during idle/attack animations.
+> Build `inputVelocity` from the **camera's** facing (see character.md), not raw keys, so movement follows the look and strafing isn't inverted. Acta animates the body in place; the physics controller translates it — they don't fight.
 
 ### Updating the controller
 

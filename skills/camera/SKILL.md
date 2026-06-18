@@ -1,11 +1,28 @@
 ---
 name: camera
-description: "Build first-person and third-person cameras plus effects (screen shake, FOV speed, rest smoothing) as ECS systems for Three.js games. Use when implementing or tuning camera movement and behavior."
+description: "Cameras for Three.js games — viverse's ready-made character camera (third/first-person orbit, collision, zoom) and, when you need it, building cameras and effects (screen shake, FOV speed) from scratch as ECS systems. Use when implementing or tuning camera movement and behavior."
 ---
 
 # Camera
 
-Inspiration for building camera movement and behavior. All examples use minimal ECS systems — see the entity-component-system skill for the full pattern.
+## For a character: use viverse's `CharacterCameraBehavior`
+
+For a player character (third- or first-person), prefer viverse's built-in camera behavior over hand-rolling one — it already does a correct orbit on **both** axes (pitch + yaw, clamped), camera collision against the world, and zoom. Hand-rolling is where the usual bugs come from: a camera locked to yaw so you can't aim up/down, or one that clips through walls.
+
+```typescript
+import { CharacterCameraBehavior, FirstPersonCharacterCameraBehavior } from '@pmndrs/viverse'
+
+const cameraBehavior = new CharacterCameraBehavior() // third-person orbit + collision + zoom
+
+// each frame, after moving the character:
+cameraBehavior.update(camera, characterModel, delta, (ray, far) => world.raycast(ray, far)?.distance)
+```
+
+Options cover `rotation` (`minPitch`/`maxPitch`/`minYaw`/`maxYaw`/`speed`), `zoom` (`minDistance`/`maxDistance`/`speed`), `collision`, and `characterBaseOffset`. Pass `FirstPersonCharacterCameraBehavior` for a first-person rig. It composes with `BvhCharacterPhysics` (movement) and Acta (animation) — see the physics skill's [character.md](../physics/character.md). Movement and aiming derive from the camera's facing (`camera.getWorldDirection`), so they include pitch and strafe the correct way.
+
+## Building a camera from scratch
+
+If you need a fully custom rig, the patterns below build first/third-person cameras as minimal ECS systems — see the entity-component-system skill for the full pattern.
 
 **Convention**: Positive pitch = look up, positive yaw = look left. Use `Euler(pitch, yaw, 0, 'YXZ')` order.
 
