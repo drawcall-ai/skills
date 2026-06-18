@@ -32,17 +32,18 @@ if (input.right) wish.add(right) // if A/D feel swapped, flip this cross product
 physics.inputVelocity.copy(wish.normalize().multiplyScalar(speed))
 if (input.jumpPressed && physics.isGrounded) physics.applyVelocity(new Vector3(0, jumpSpeed, 0))
 
-// 2) Step physics (moves + collides the character)
-physics.update(characterModel, delta, physicsOptions)
+// 2) Step physics (moves + collides the character). Pass the model's Object3D (model.scene).
+physics.update(model.scene, delta, physicsOptions)
 
 // 3) Orbit camera, with world collision so it never clips through geometry
-cameraBehavior.update(camera, characterModel, delta, (ray, far) => world.raycast(ray, far)?.distance)
+cameraBehavior.update(camera, model.scene, delta, (ray, far) => world.raycast(ray, far)?.distance)
 
-// 4) Animation — drive Acta with movement state + action requests. Locomotion blends from the
-//    movement you feed it; one-shot actions come from gameplay, not raw input events.
+// 4) Animation — Acta is the ONLY animation driver. Feed movement state + action requests.
 interpreter.update(delta, { moveX, moveZ, grounded: physics.isGrounded })
 if (firedThisFrame) interpreter.requestAction('fire')
 if (reloadStarted) interpreter.requestAction('reload')
+// Do NOT call model.mixer.update(delta) — the model has a .mixer, but Acta advances it.
+// Calling it yourself double-advances the animation and breaks it.
 ```
 
 Aiming and shooting use the camera's **full** world direction (`camera.getWorldDirection`), so the player can aim up and down — not yaw alone. Raycast from screen center and hit the collider the ray actually intersects (`raycaster.intersectObjects`), rather than snapping to whichever enemy is nearest the aim.

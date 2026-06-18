@@ -20,6 +20,8 @@ Ambient light controls shadow appearance—without it, shadows are pure black. E
 
 Use AmbientLight + CSM (Cascading Shadow Maps). CSM replaces DirectionalLight with superior shadow quality out of the box—no need to manually configure shadow camera bounds.
 
+A lone `DirectionalLight` has a single shadow map covering one fixed frustum: over a large outdoor map its shadows are either blurry (one map stretched across hundreds of meters) or simply missing past a short range. **For any outdoor or large scene, use CSM** — its cascades keep shadows crisp from right next to the camera out to the horizon. Don't light a big map with a lone `DirectionalLight` and a small shadow frustum. The CSM setup below is worth the few extra lines.
+
 ```typescript
 import { CSM } from 'three/examples/jsm/csm/CSM.js'
 import { Material } from 'three'
