@@ -44,11 +44,11 @@ const characterPhysics = new BvhCharacterPhysics(world)
 Driving it
 
 ```ts
-characterPhysics.inputVelocity.copy(cameraRelativeWish) // continuous (walking) — set each frame
+characterPhysics.inputVelocity.copy(velocity) // continuous (walking) — set each frame
 characterPhysics.applyVelocity(jumpImpulse) // one-off impulse (e.g. jumping)
 ```
 
-> Build `inputVelocity` from the **camera's** facing (see character.md), not raw keys, so movement follows the look and strafing isn't inverted. Acta animates the body in place; the physics controller translates it — they don't fight.
+> For an Acta character, **do not set `inputVelocity` from raw input.** Acta produces the velocity from the active animation and hands it to you in its `motion` callback — set `inputVelocity` from that desired velocity and step the controller there. You pass Acta only a movement *intent* (camera-relative direction + amount). See [character.md](./character.md).
 
 ### Updating the controller
 
