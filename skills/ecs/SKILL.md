@@ -9,6 +9,8 @@ We use EliCS, a lightweight, high-performance Entity Component System framework 
 
 **Core concepts:** Entities (unique objects), Components (data containers), Systems (logic processors), Queries (entity selectors), and World (the container managing everything).
 
+**When to reach for it:** a game with many interacting objects that share behaviors (enemies, projectiles, pickups, units) and a state-driven update loop benefits from ECS — it keeps logic in systems and state in components instead of a tangle of classes. For a tiny scene with a handful of bespoke objects, ECS is overhead; plain objects and a render loop are fine. The sections below show enough of the EliCS API to build with it; for exact signatures and the full type surface, read the installed `elics` types rather than relying on this page, which can lag the package.
+
 ## Recommended Architecture
 
 Use 3 layers: Input, State, and View.
@@ -43,9 +45,11 @@ import { createComponent, Types } from 'elics'
 import { world } from './world.ts'
 
 // Available Types:
-// - Scalars: Types.Float32, Types.Int16, Types.Boolean, Types.String
+// - Scalars: Types.Int8, Types.Int16, Types.Float32, Types.Float64, Types.Boolean, Types.String
 // - Vectors: Types.Vec2, Types.Vec3, Types.Vec4, Types.Color (RGBA 0-1)
-// - References: Types.Entity, Types.Object, Types.Enum
+// - Entity reference: Types.Entity
+// - Enum: Types.Enum
+// - Types.Object holds any JS value (a Three.js mesh, an array) — not an ECS reference
 
 // Define enums for type-safe state management using const assertions
 export const UnitType = {
@@ -161,7 +165,7 @@ const movementQueryConfig = {
 }
 
 export class MovementSystem extends createSystem(movementQueryConfig) {
-  update(delta, time) {
+  update(delta: number, time: number) {
     this.queries.movables.entities.forEach((entity: Entity) => {
       const position = entity.getVectorView(Position, 'value')
       const velocity = entity.getVectorView(Velocity, 'value')
@@ -196,7 +200,7 @@ export class UnitViewSystem extends createSystem(unitViewQueryConfig) {
     this.queries.units.subscribe('disqualify', destroy)
   }
 
-  update(delta, time) {
+  update(delta: number, time: number) {
     this.queries.units.entities.forEach((entity) => {
       const model = this.models.get(entity)!
       const pos = entity.getVectorView(Position, 'value')
@@ -227,31 +231,31 @@ enemySystem.spawnEnemy(position)
 
 ## System Resource Loading
 
-Systems can define an async `load()` method for resource loading. The lifecycle order is: `init()` → `load()` → `update()`.
+The framework calls `init()` (on `registerSystem`) and `update()` (each `world.update`). It has **no `load()` lifecycle hook** — only those two. For async resource loading, give the system your own `load()` method and call it yourself after registering, before the animation loop. It is an ordinary method, not a framework hook: nothing calls it unless you do.
 
 ```typescript
 export class EnemySystem extends createSystem(queryConfig) {
   private model!: Group
 
   init() {
-    /* automatically called by registerSystem() */
+    /* called by registerSystem() — synchronous only */
   }
 
   async load() {
+    // your own method — you must await it yourself (see below)
     this.model = (await new GLTFLoader().loadAsync('/models/enemy.glb')).scene
   }
 
-  update(delta: number) {
-    /* called every frame */
+  update(delta: number, time: number) {
+    /* called every frame by world.update */
   }
 }
 ```
 
-In `main.ts`, call `load()` before starting the animation loop:
+In `main.ts`, register (which runs `init()`), then await your `load()` before the loop:
 
 ```typescript
-// automatically calls init()
-world.registerSystem(EnemySystem)
+world.registerSystem(EnemySystem) // runs init()
 await world.getSystem(EnemySystem)!.load()
 renderer.setAnimationLoop(() => { ... })
 ```

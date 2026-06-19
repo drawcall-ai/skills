@@ -17,17 +17,14 @@ import { BvhPhysicsWorld } from '@pmndrs/viverse'
 const world = new BvhPhysicsWorld()
 ```
 
-Adding a static body
+`addBody(object, kinematic)` — the second argument is whether the body is **kinematic** (script-moved, like a platform or train), not whether it is static. Pass `false` for static world geometry (ground, walls), `true` for things you move yourself.
 
 ```ts
-world.addBody(ground, false)
+world.addBody(ground, false) // static
+world.addBody(train, true)   // kinematic (you move it each frame)
 ```
 
-Adding a kinematic body
-
-```ts
-world.addBody(train, true)
-```
+> Watch the inversion: `addBody`'s flag is `kinematic`, but `addSensor`'s second flag below is `isStatic` — the booleans mean opposite things.
 
 ## Character Controller
 
@@ -40,6 +37,8 @@ import { BvhCharacterPhysics, type BvhCharacterPhysicsOptions } from '@pmndrs/vi
 
 const characterPhysics = new BvhCharacterPhysics(world)
 ```
+
+The controller assumes the character object's **origin sits at its feet** (the bottom of the capsule). If your model's origin is at its center or head, the character floats or sinks — wrap it in a `Group` whose origin is at the feet. Tuning lives in the optional `BvhCharacterPhysicsOptions` (third arg to `update`): `capsuleRadius`, `capsuleHeight`, `gravity`, `maxGroundSlope`, `updatesPerSecond`, `linearDamping`.
 
 Driving it
 
@@ -55,7 +54,7 @@ characterPhysics.applyVelocity(jumpImpulse) // one-off impulse (e.g. jumping)
 Call every frame after setting velocity:
 
 ```ts
-characterPhysics.update(character, delta, {} satisfies BvhCharacterPhysicsOptions)
+characterPhysics.update(character, delta) // pass a BvhCharacterPhysicsOptions third arg to tune
 ```
 
 ### Ground State
@@ -63,6 +62,16 @@ characterPhysics.update(character, delta, {} satisfies BvhCharacterPhysicsOption
 ```ts
 characterPhysics.isGrounded // true when character is on the ground
 ```
+
+### What the controller does not do — build these yourself
+
+The controller gives you exactly two primitives — `inputVelocity` (continuous) and `applyVelocity` (impulse) — plus `isGrounded`. The rules a specific game layers on top are yours to write:
+
+- **Multi-jump / double-jump, coyote-time, jump buffering:** there is no jump counter — gate the first `applyVelocity` on `isGrounded`, track your own air-jump count, and reset it when grounded.
+- **Wall-jump / wall-slide:** `isGrounded` reports ground only, not walls. Detect a wall with a horizontal `world.raycast(ray, far)` from the capsule — the returned intersection gives the hit distance and surface normal — then `applyVelocity` away-from-wall + up.
+- **Moving-platform ride-along:** standing on a kinematic platform does not carry the character. Add the platform's per-frame delta to the character yourself while it stands on it.
+
+These are gameplay rules, not missing features — the controller stays deliberately minimal so each game tunes its own feel.
 
 ## Sensors
 

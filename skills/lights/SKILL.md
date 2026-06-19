@@ -36,7 +36,10 @@ function createCsmSun(scene, camera, renderer, lightDirection = new Vector3(-1, 
     cascades: 4, lightDirection: lightDirection.clone().normalize(),
     camera, parent: scene, lightIntensity: intensity, maxFar, mode: 'practical',
   })
+  // fade is ignored by the constructor and only takes effect after a frustum rebuild,
+  // so set it then rebuild — otherwise cascade seams stay hard.
   csm.fade = true
+  csm.updateFrustums()
 
   const biases = [-0.00001, -0.0001, -0.0003, -0.0006]
   const normalBiases = [0.02, 0.06, 0.16, 0.3]
@@ -46,6 +49,9 @@ function createCsmSun(scene, camera, renderer, lightDirection = new Vector3(-1, 
   })
 
   // CSM must inject its shader into every material; do it lazily at render time.
+  // setupMaterial OVERWRITES material.onBeforeCompile, so only re-chain a material's
+  // existing hook when it actually has one — stock materials don't, and calling
+  // .apply on the missing prior hook would throw.
   const done = new WeakSet<Material>()
   const original = renderer.renderBufferDirect.bind(renderer)
   renderer.renderBufferDirect = function (cam, sc, geom, material, object, group) {
@@ -53,8 +59,8 @@ function createCsmSun(scene, camera, renderer, lightDirection = new Vector3(-1, 
       done.add(material)
       const prev = material.onBeforeCompile
       csm.setupMaterial(material)
-      if (material.onBeforeCompile !== prev) {
-        const csmHook = material.onBeforeCompile
+      const csmHook = material.onBeforeCompile
+      if (typeof prev === 'function' && prev !== csmHook) {
         material.onBeforeCompile = (...args) => { prev.apply(material, args); csmHook.apply(material, args) }
       }
     }

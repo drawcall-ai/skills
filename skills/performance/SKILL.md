@@ -8,12 +8,12 @@ description: "Keep a Three.js game at a smooth framerate as it grows — instanc
 A scene that runs fine with a few objects stutters once it has crowds, particles, and a big map. The framerate is set by three budgets — **draw calls**, **GPU work**, and **per-frame CPU/allocations** — and the levers below each target one. Measure first, then fix the actual bottleneck.
 
 ## Measure first
-Don't guess. Profile the running game with `vitexec --performance-trace` (and `--cpu-profile` for hot functions). Find whether you're CPU-bound (too much per-frame JS) or GPU-bound (too many draw calls / too much overdraw), then apply the matching lever.
+Don't guess. Profile the running game with `vitexec --performance-trace` (and `--cpu-profile` for hot functions). Read the verdict from where the frame time goes: long scripting/JS time per frame and a busy main thread mean **CPU-bound** (apply "less per-frame CPU"); a cheap main thread but high GPU/render time, many draw calls, or large overdraw mean **GPU-bound** (apply "less GPU work" / "fewer draw calls"). Fix the budget the trace actually points to, not the one you assumed.
 
 ## Fewer draw calls
 Each distinct mesh is roughly one draw call; thousands of them stall the CPU submitting work.
-- **Instancing**: render many copies of the same geometry (trees, rocks, grass, bullets, identical enemies) as one `InstancedMesh`, updating per-instance matrices.
-- **Merge static geometry**: combine non-moving meshes that share a material into one buffer geometry.
+- **Instancing**: render many copies of the same geometry (trees, rocks, grass, bullets, identical enemies) as one `InstancedMesh`. Position each copy with `mesh.setMatrixAt(i, matrix)` and then set `mesh.instanceMatrix.needsUpdate = true` — omit that flag and instances never move.
+- **Merge static geometry**: combine non-moving meshes that share a material into one buffer geometry. The tradeoff: a merged mesh is culled all-or-nothing, so don't merge geometry spread across a large area that benefits from per-object frustum culling.
 - **Share materials/textures**: reuse material and texture instances; an atlas lets different props share one draw call.
 
 ## Less GPU work

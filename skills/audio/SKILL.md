@@ -29,9 +29,13 @@ ui.play()
 ```
 
 ## Overlap and browser policy
-- One `Audio`/`PositionalAudio` node can't play twice at once. For rapid sounds (gunfire, footsteps) keep a small pool of nodes or create a fresh node per shot from the shared buffer, so sounds don't cut each other off.
+- One `Audio`/`PositionalAudio` node can't play twice at once (`.play()` on an already-playing node warns and no-ops). For rapid sounds (gunfire, footsteps) keep a small pool of nodes or create a fresh node per shot from the shared buffer, so sounds don't cut each other off. A `PositionalAudio` only pans/attenuates while it's parented into the scene graph (`source.add(node)`), so a pooled positional node must stay attached — plain non-positional `Audio` has no such requirement.
 - Browsers block audio until a user gesture. Resume on the first click/key: `listener.context.resume()`.
 
 ## Coverage
 
 Walk the game's feedback moments and confirm each has a sound: fire, dry-fire, reload start + finish, pickup, craft, hit (dealt and taken), death, footstep (vary by surface), wave/round transitions, win/lose. Market `sound-effect` and `background-music` assets cover most needs; if a moment has no fitting asset, synthesize a short WebAudio tone rather than leaving it silent.
+
+## Voice and narration → the `speech` skill
+
+For spoken output — NPC dialogue, narration, tutorial voice, accessibility readouts — do not hand-wave or stub it. Route to the `speech` skill (Drawcall text-to-speech): it returns an audio clip you play through the same `Audio`/`PositionalAudio` nodes above (positional for an on-screen speaker, plain for a narrator). It owns voice selection, caching, and autoplay constraints, so let it; this skill only handles getting its audio into the scene.

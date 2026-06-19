@@ -22,18 +22,34 @@ const renderer = new WebGLRenderer({
 
 The `EffectComposer` manages and runs passes. It is common practice to use a `RenderPass` as the first pass to automatically clear the buffers and render a scene for further processing. Fullscreen image effects are rendered via the `EffectPass`.
 
+A single `EffectPass` merges any number of effects into one shader, so group the finishing effects into it. The full tasteful pass — ambient occlusion, subtle bloom, then tone mapping last — wires up like this:
+
 ```js
-import { BloomEffect, EffectComposer, EffectPass, RenderPass } from 'postprocessing'
+import {
+  EffectComposer, EffectPass, RenderPass, NormalPass,
+  SSAOEffect, BloomEffect, ToneMappingEffect, ToneMappingMode,
+} from 'postprocessing'
+import { HalfFloatType } from 'three'
 
-const composer = new EffectComposer(renderer)
+const composer = new EffectComposer(renderer, { frameBufferType: HalfFloatType })
 composer.addPass(new RenderPass(scene, camera))
-composer.addPass(new EffectPass(camera, new BloomEffect()))
 
-requestAnimationFrame(function render() {
-  requestAnimationFrame(render)
-  composer.render()
-})
+// Ambient occlusion needs scene normals: add a NormalPass and feed its texture to SSAOEffect.
+// new SSAOEffect(camera) alone (no normal buffer) renders nothing — this is the usual AO mistake.
+const normalPass = new NormalPass(scene, camera)
+composer.addPass(normalPass)
+const ssao = new SSAOEffect(camera, normalPass.texture, { worldDistanceThreshold: 20, worldDistanceFalloff: 5, radius: 0.1, intensity: 2 })
+
+const bloom = new BloomEffect({ intensity: 0.4, luminanceThreshold: 0.85 }) // subtle — see below
+const toneMapping = new ToneMappingEffect({ mode: ToneMappingMode.ACES_FILMIC })
+
+// Tone mapping goes LAST. Effects in one EffectPass apply in array order.
+composer.addPass(new EffectPass(camera, ssao, bloom, toneMapping))
+
+renderer.setAnimationLoop(() => composer.render())
 ```
+
+For a gentle color grade, add a grading effect into the same `EffectPass` (before tone mapping): `BrightnessContrastEffect`, `HueSaturationEffect`, or `LUT3DEffect` for a film LUT. Keep it restrained — a few points of contrast and saturation, not a heavy wash.
 
 ## Output Color Space
 
@@ -61,32 +77,6 @@ This library provides an `EffectPass` which automatically organizes and merges a
 
 All fullscreen render operations also use a single triangle that fills the screen. Compared to using a quad, this approach harmonizes with modern GPU rasterization patterns and eliminates unnecessary fragment calculations along the screen diagonal. This is especially beneficial for GPGPU passes and effects that use complex fragment shaders.
 
-## Included Effects
+## Reaching for other effects
 
-- Antialiasing
-- Bloom
-- Blur
-- Color Depth
-- Color Grading
-  - Color Average
-  - Sepia
-  - Brightness & Contrast
-  - Hue & Saturation
-  - LUT
-- Depth of Field
-  - Vignette
-- Glitch
-  - Chromatic Aberration
-  - Noise
-- God Rays
-- Pattern
-  - Dot-Screen
-  - Grid
-  - Scanline
-- Pixelation
-- Outline
-- Shock Wave
-  - Depth Picking
-- SSAO
-- Texture
-- Tone Mapping
+The library ships many more effects than the tasteful-pass set above — depth of field, vignette, outline (for selection/highlight), god rays, chromatic aberration, glitch, pixelation, shock wave, and more. Add them the same way: construct the effect and drop it into an `EffectPass`. Browse the package's exports for the current set and each effect's options rather than guessing names — but stay restrained: a game's finish is a few well-judged effects, not every one available.

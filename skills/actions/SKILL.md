@@ -9,6 +9,8 @@ Actions decouple inputs from game logic. Bindings translate hardware events into
 
 **Input → Binding → Action → Game Logic**
 
+This skill covers only the input layer. For a moving character, that intent flows on: **input → Acta → physics** — your system reads these actions and hands a move *intent* to Acta (animation), which produces the velocity for `BvhCharacterPhysics`. Don't drive the physics controller straight from raw input. See the **acta**, **physics**, and **camera** skills.
+
 ## Action Types
 
 - **StateAction** – Persistent state (movement, running). Multiple writers merge into one value via `.get()`.
@@ -27,6 +29,8 @@ Actions decouple inputs from game logic. Bindings translate hardware events into
 > **State vs Event**: State actions persist until changed — poll with `.get()`. Event actions fire once — capture with `.subscribe()` or values are lost.
 
 ## Using Actions in Systems
+
+The examples below assume one `const abortController = new AbortController()` created at setup; its `.signal` is passed to every binding and subscription so they all clean up together (see [Lifecycle](#lifecycle) at the end).
 
 Poll **StateAction** with `.get()` each frame. Subscribe to **EventAction** once at init — never in the update loop.
 
@@ -157,6 +161,8 @@ const CrouchAction = new StateAction<boolean>((a, b) => a || b, false)
 const FireAction = new EventAction<void>()
 ```
 
+> A `StateAction` **must** be given a merge function and neutral value — `.get()` throws without them (the merge fn is what combines multiple writers). An `EventAction` only needs a combine function if you intend to read it with `.get()`; for the normal `.emit()`/`.subscribe()` pattern, the no-arg form is fine.
+
 ## Writing to StateAction
 
 Create a writer, then call `.write()` on state changes. Multiple writers merge automatically.
@@ -216,8 +222,6 @@ const keyboard = new KeyboardLocomotionActionBindings(document.body, abortContro
 abortController.abort()
 ```
 
-## Summary
+## Limitations — filling gaps
 
-- **Decouple input from logic** – systems consume actions, not raw input events.
-- **Compose inputs** – multiple bindings write to the same action; values merge.
-- **Think signals** – code against "move forward" or "rotate," not specific keys.
+The built-in bindings cover keyboard, mouse (pointer-lock), touch, and on-screen mobile controls. When you need something they don't — a gamepad, a remapped key, a game-specific verb (crouch, lean, ability) — that's expected: define a custom `StateAction`/`EventAction` and either a `mapFrom` binding or your own DOM/gamepad listener that writes to it (shown above). The action layer is meant to be extended this way, so reach for a custom action rather than reading raw input inside gameplay systems.

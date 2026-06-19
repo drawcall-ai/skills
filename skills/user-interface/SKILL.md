@@ -37,7 +37,7 @@ The goal is interface that looks intentionally designed for *this* product — a
 
 **Motion.** A few intentional moments beat constant movement — one well-orchestrated entrance, one meaningful hover/reveal. Keep it fast and restrained with ease-out easing; skip bounce/elastic. In HTML, animate `transform`/`opacity`, not layout.
 
-**Avoid these AI fingerprints:** glassmorphism everywhere, rounded cards with generic drop shadows, neon glow, emoji as icons, gradient text on headings/metrics, decorative sparklines, modals as a lazy default.
+**Avoid these AI fingerprints:** glassmorphism everywhere, rounded cards with generic drop shadows, neon glow, emoji as icons, gradient text on headings/metrics, decorative sparklines, modals as a lazy default. (These are about UI *chrome* — they don't constrain the game world itself, where bloom and emissive glow are legitimately part of the look; see the `world` and `postprocessing` skills.)
 
 **Legibility & ergonomics.** Strong contrast, comfortable sizing, clear focus/hover states; in spatial UI keep targets large and text readable at distance. Immersion never beats usability.
 

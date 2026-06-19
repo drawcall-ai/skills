@@ -9,17 +9,17 @@ description: "Forward DOM pointer events into a Three.js scene and filter them w
 
 We can use `forwardHtmlEvents` to forward the html document events into the 3D scene.
 
-```js
+```ts
 import * as THREE from 'three'
 import { forwardHtmlEvents, PointerEvent } from '@pmndrs/pointer-events'
+
+const width = window.innerWidth,
+  height = window.innerHeight
 
 const scene = new THREE.Scene()
 const camera = new THREE.PerspectiveCamera(70, width / height, 0.01, 10)
 camera.position.z = 1
 const { update } = forwardHtmlEvents(document.body, () => camera, scene)
-
-const width = window.innerWidth,
-  height = window.innerHeight
 
 const geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2)
 const material = new THREE.MeshBasicMaterial({ color: new THREE.Color('red') })
@@ -38,7 +38,13 @@ renderer.setAnimationLoop(() => {
 })
 ```
 
-Furthermore, we can also use `forwardObjectEvents` to forward events from e.g. a plane into a seperate scene rendered on this plane for building an interactive portal.
+Furthermore, we can also use `forwardObjectEvents` to forward events from e.g. a plane into a separate scene rendered on this plane for building an interactive portal. It has the same shape — pass the surface object, a camera getter, and the portal's scene, and call its `update` each frame:
+
+```ts
+const { update: updatePortal } = forwardObjectEvents(planeMesh, () => portalCamera, portalScene)
+// in the render loop, alongside the main update():
+updatePortal()
+```
 
 ## Event Filtering
 

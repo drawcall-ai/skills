@@ -25,6 +25,8 @@ const material = new MeshStandardMaterial({ map: base, normalMap: normal, roughn
 - **Base-color and emissive maps → `SRGBColorSpace`.** Forgetting this makes everything look washed-out and grayish.
 - Normal / roughness / metalness / AO maps stay **linear** (the default — do not mark them sRGB).
 
+In current Three.js an `aoMap` shares the primary `uv` set by default — you do **not** need to build a second `uv2` attribute (that requirement is from older versions).
+
 ## Tiling for large surfaces
 Ground and walls must repeat the texture, not stretch one copy across the whole mesh:
 
