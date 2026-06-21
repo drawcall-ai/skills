@@ -26,7 +26,7 @@ CSM looks like a lot of setup, but it is **paste-once boilerplate** — drop thi
 
 ```typescript
 import { CSM } from 'three/examples/jsm/csm/CSM.js'
-import { Material, Vector3 } from 'three'
+import { Material, MeshStandardMaterial, Vector3 } from 'three'
 
 // Paste-once: an outdoor sun with cascaded shadows. Returns the csm; call csm.update() each frame.
 function createCsmSun(scene, camera, renderer, lightDirection = new Vector3(-1, -2, -1), intensity = 2, maxFar = 200) {
@@ -48,14 +48,18 @@ function createCsmSun(scene, camera, renderer, lightDirection = new Vector3(-1, 
     light.shadow.normalBias = normalBiases[i] ?? 0.3
   })
 
-  // CSM must inject its shader into every material; do it lazily at render time.
-  // setupMaterial OVERWRITES material.onBeforeCompile, so only re-chain a material's
-  // existing hook when it actually has one — stock materials don't, and calling
-  // .apply on the missing prior hook would throw.
+  // CSM injects its shader chunks into materials lazily at render time. Apply it ONLY to the lit
+  // PBR materials that actually receive shadows (MeshStandardMaterial — terrain, characters, props).
+  // Splicing CSM's shadow chunks into materials with no lighting pipeline — additive sprites, points,
+  // MeshBasicMaterial, and other transparent VFX/UI — breaks their shaders so they render as dark
+  // quads (the classic "dark planes" over muzzle flashes and particles); those never receive shadows
+  // anyway. setupMaterial OVERWRITES material.onBeforeCompile, so only re-chain a material's existing
+  // hook when it actually has one — stock materials don't, and calling .apply on a missing prior hook
+  // would throw.
   const done = new WeakSet<Material>()
   const original = renderer.renderBufferDirect.bind(renderer)
   renderer.renderBufferDirect = function (cam, sc, geom, material, object, group) {
-    if (material && !done.has(material)) {
+    if (material instanceof MeshStandardMaterial && !done.has(material)) {
       done.add(material)
       const prev = material.onBeforeCompile
       csm.setupMaterial(material)
