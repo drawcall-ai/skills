@@ -47,3 +47,15 @@ label.quaternion.copy(camera.quaternion)
 ```
 
 `THREE.Sprite` always faces the camera automatically and avoids this entirely — prefer it for simple health bars and icons.
+
+## Measuring an object's size (`Box3`) — beware skinned/rigged meshes
+
+`new Box3().setFromObject(object)` is correct for **static** meshes, but it gives a wrong, unstable answer for **skinned/rigged/animated** objects (characters). It unions every descendant — including the **skeleton bones** (which sit far outside the visible body) and any reference/clone sub-objects a character system keeps — and it expands to the mesh's **bind-pose** geometry, so the box also **changes every frame** as the animation poses the bones. The result is routinely 2–3× (or more) the visible body height.
+
+This silently breaks anything sized from that number — the classic case is scaling one character to match another's measured height and getting a giant: the measured one was live/animating (inflated) while the other was measured fresh (clean). To get a character's real size:
+
+- measure the **`SkinnedMesh`'s `geometry.boundingBox`** (the stable bind-pose mesh extent: `mesh.geometry.computeBoundingBox()`, then read `mesh.geometry.boundingBox`), or
+- measure the **raw model once on load**, before it is rigged/animated/wrapped, or
+- avoid measuring entirely and size against a **known constant** (a target character height you decide).
+
+Don't `setFromObject` a live character every frame and trust the height.

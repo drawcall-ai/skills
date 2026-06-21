@@ -28,6 +28,8 @@ cameraBehavior.update(camera, characterModel, delta, raycast, FirstPersonCharact
 
 It composes with `BvhCharacterPhysics` (movement) and Acta (animation) — see the **acta** and **physics** skills. Movement and aiming derive from the camera's facing (`camera.getWorldDirection`), so they include pitch and strafe the correct way; the path of information is input → Acta → physics.
 
+`characterBaseOffset` is **camera-relative**: its horizontal part is rotated by the camera yaw, so an over-the-shoulder offset like `[0.5, 1.5, 0]` stays over the shoulder *relative to the view* as you orbit, and a purely vertical offset (the default and first-person) is unaffected. You do not need the character to face the camera for the framing to be stable.
+
 ## Building a camera from scratch
 
 If you need a fully custom rig, the patterns below build first/third-person cameras as minimal ECS systems — see the entity-component-system skill for the full pattern.

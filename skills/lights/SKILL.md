@@ -102,6 +102,7 @@ Ambient-only or hemisphere-only lighting looks flat and gray because nothing giv
 - Set `scene.environment` from an HDR (Market `environment` assets ship one) so materials pick up real image-based reflections and fill light.
 - Add one directional/CSM "sun" for shape and shadows.
 - Tone-map the HDR range with `renderer.toneMapping = ACESFilmicToneMapping` and exposure ~1.
+- **Balance the fill against the sun, or the shadows wash out.** A bright IBL environment (a clear midday sky especially) plus a high `AmbientLight` floods the shadowed side of every surface, so the sun's cast shadows fade to nearly invisible even when shadow-casting is wired correctly. The **IBL is usually the bigger fill source than `AmbientLight`** — a bright sky env at full strength washes shadows on its own — so balancing only `AmbientLight` is not enough: also turn `scene.environmentIntensity` down (often `~0.3–0.6`) and keep the sun clearly brighter than both, or shadows stay flat. Keep ambient low (`0.2–0.4` or none) too, then confirm by eye that objects drop a readable shadow. A correctly set-up CSM showing *no* shadows on screen is almost always drowned by fill, not broken — turn the fill (IBL first) down before suspecting the shadow pipeline.
 
 Flat ambient light + solid-color (untextured) materials is exactly the "gray clay" look — fix it with IBL, a sun, and real textures (see the `materials` skill).
 
