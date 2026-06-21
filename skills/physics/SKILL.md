@@ -70,6 +70,7 @@ The controller gives you exactly two primitives — `inputVelocity` (continuous)
 - **Multi-jump / double-jump, coyote-time, jump buffering:** there is no jump counter — gate the first `applyVelocity` on `isGrounded`, track your own air-jump count, and reset it when grounded.
 - **Wall-jump / wall-slide:** `isGrounded` reports ground only, not walls. Detect a wall with a horizontal `world.raycast(ray, far)` from the capsule — the returned intersection gives the hit distance and surface normal — then `applyVelocity` away-from-wall + up.
 - **Moving-platform ride-along:** standing on a kinematic platform does not carry the character. Add the platform's per-frame delta to the character yourself while it stands on it.
+- **Falling off the world / out of bounds:** `isGrounded` is true only when the capsule's downward shapecast hits collision geometry — past the edge of a finite ground mesh there is nothing to hit, so the character falls forever and stays stuck in its airborne/fall pose (which often reads as an unintended "flying" or glide state). The controller will not stop this. Keep the player on solid ground yourself: clamp position to the collidable area, add an out-of-bounds floor plane or a kill-barrier that respawns, rather than assuming the world is infinite. Bound the player to the *physics mesh*, which may extend past the visible play area.
 
 These are gameplay rules, not missing features — the controller stays deliberately minimal so each game tunes its own feel.
 
