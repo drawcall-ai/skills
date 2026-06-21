@@ -37,7 +37,7 @@ composer.addPass(new RenderPass(scene, camera))
 // Ambient occlusion needs scene normals: add a NormalPass and feed its texture to SSAOEffect.
 // new SSAOEffect(camera) alone (no normal buffer) renders nothing — this is the usual AO mistake.
 const normalPass = new NormalPass(scene, camera)
-composer.addPass(normalPass)
+composer.addPass(normalPass) // but hide transparent VFX for this pass — see "SSAO and transparent objects" below
 const ssao = new SSAOEffect(camera, normalPass.texture, { worldDistanceThreshold: 20, worldDistanceFalloff: 5, radius: 0.1, intensity: 2 })
 
 const bloom = new BloomEffect({ intensity: 0.4, luminanceThreshold: 0.85 }) // subtle — see below
@@ -50,6 +50,32 @@ renderer.setAnimationLoop(() => composer.render())
 ```
 
 For a gentle color grade, add a grading effect into the same `EffectPass` (before tone mapping): `BrightnessContrastEffect`, `HueSaturationEffect`, or `LUT3DEffect` for a film LUT. Keep it restrained — a few points of contrast and saturation, not a heavy wash.
+
+## SSAO and transparent objects (dark halos around VFX)
+
+The `NormalPass` renders the whole scene into a normal buffer with an override material, transparent objects included. But transparent VFX — additive muzzle flashes, particles, tracers, beams, UI planes — render with `depthWrite: false`, so they never enter the depth buffer SSAO also samples. SSAO then finds a normal with no matching depth and carves an occlusion halo around each one: faint dark quads that track your particles, most visible when shooting. (This is a *different* bug from CSM rendering VFX as solid dark quads by splicing shadow code into their shaders — see the `lights` skill.)
+
+Keep transparent objects out of the `NormalPass` so its normals match the depth buffer. The reliable, general fix is to hide every transparent object just for that pass and restore it after — a pair of no-op passes bracketing the `NormalPass`:
+
+```ts
+import { Pass } from 'postprocessing'
+
+// Hides (or restores) every transparent object so the NormalPass sees only opaque geometry.
+class TransparentToggle extends Pass {
+  constructor(scene, hidden, hide) { super('TransparentToggle'); this.scene = scene; this.hidden = hidden; this.hide = hide; this.needsSwap = false }
+  render() {
+    if (this.hide) this.scene.traverse((o) => { if (o.visible && o.material?.transparent) { this.hidden.push(o); o.visible = false } })
+    else { for (const o of this.hidden) o.visible = true; this.hidden.length = 0 }
+  }
+}
+
+const hidden = []
+composer.addPass(new TransparentToggle(scene, hidden, true)) // hide for the normal pass
+composer.addPass(normalPass)
+composer.addPass(new TransparentToggle(null, hidden, false)) // restore before the effect pass draws the lit color buffer
+```
+
+Opaque AO surfaces are unaffected — they still ground objects with contact shadow.
 
 ## Output Color Space
 
