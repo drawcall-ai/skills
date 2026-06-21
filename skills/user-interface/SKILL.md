@@ -21,6 +21,10 @@ Spatial and XR UI go through the `drawcall-ai/uikitml` skill (`npx skills add dr
 
 To make 3D objects (including spatial UI) respond to clicks and hovers, use the `@pmndrs/pointer-events` package.
 
+## The loading screen
+
+A 3D app does real work before its first frame — loading models, textures, environment maps, audio — and until that finishes the canvas is blank, so the player's *first* experience is a frozen black screen unless you cover it. Show a loading screen from the very start (plain HTML/CSS over the canvas in a non-XR app) carrying the product's identity and load progress, then fade it out once the scene is ready. It is part of the UX and the first thing any playthrough sees, not an afterthought — design it to the same bar as the rest of the UI, and advance its progress across the real load stages rather than faking a fixed timer. Drive the reveal from load completion and trigger the fade with a timer, not a lone `requestAnimationFrame` — a backgrounded or headless tab (such as a capture/proof run) can pause rAF, leaving the loader stuck on screen forever.
+
 ## Design like a professional
 
 The goal is interface that looks intentionally designed for *this* product — a game's UI should read like game UI, a tool's like a tool. The failure mode is the generic "AI app" look: it comes from defaulting to plausible-but-generic patterns instead of making deliberate choices. Design like a studio lead giving the product its own identity.
