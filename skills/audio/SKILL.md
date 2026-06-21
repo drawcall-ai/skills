@@ -36,6 +36,6 @@ ui.play()
 
 Walk the game's feedback moments and confirm each has a sound: fire, dry-fire, reload start + finish, pickup, craft, hit (dealt and taken), death, footstep (vary by surface), wave/round transitions, win/lose. Market `sound-effect` and `background-music` assets cover most needs; if a moment has no fitting asset, synthesize a short WebAudio tone rather than leaving it silent.
 
-## Voice and narration → the `speech` skill
+## Voice and narration -> `speech` skill
 
-For spoken output — NPC dialogue, narration, tutorial voice, accessibility readouts — do not hand-wave or stub it. Route to the `speech` skill (Drawcall text-to-speech): it returns an audio clip you play through the same `Audio`/`PositionalAudio` nodes above (positional for an on-screen speaker, plain for a narrator). It owns voice selection, caching, and autoplay constraints, so let it; this skill only handles getting its audio into the scene.
+For spoken output — NPC dialogue, narration, tutorial voice, accessibility readouts — route to the `speech` skill. It returns an audio clip URL from text and voice input, including guidance for voice selection, caching, browser autoplay constraints, and first-request warmup. Use this audio skill only to play the resulting clip through the same `Audio`/`PositionalAudio` nodes above.
