@@ -105,7 +105,7 @@ export class ThirdPersonCameraSystem extends createSystem({}) {
 
 ## Rest Position
 
-Smoothly interpolate to rest pose when idle. `pitch`/`yaw` are private state of the camera system above, so the rest-lerp belongs *inside* that system's `update` — a separate system can't reach in and mutate them:
+Smoothly interpolate to rest pose when idle. `pitch`/`yaw` are private state of the camera systems above, so the rest-lerp belongs *inside* the system that owns them — a separate system can't reach in and mutate them:
 
 ```typescript
 // add these fields to the FirstPerson/ThirdPerson camera system:

@@ -19,13 +19,13 @@ A particle effect is many tiny quads that spawn together, fly outward, and fade 
 
 - **Pool**: pre-create a fixed pool of particles (a `Points` cloud, or a set of `Sprite`s). On an event, activate N of them at the hit point with random velocities; retire them as their lifetime runs out, and recycle. `Points` is one draw call and the right default for bursts of identical billboards; reach for `Sprite`s only when a particle needs its own rotation or independent transform.
 - **Additive glow**: for fire, sparks, magic, and energy, use `blending: AdditiveBlending`, `depthWrite: false`, and a soft round texture so overlaps glow. (This is also how to fake a muzzle flash or explosion light without adding a real light.)
-- **Lifetime**: each particle has a short life (~0.1–0.6s); over its life move it by its velocity (add gravity for debris/blood), shrink and/or fade its opacity to zero, then free it.
+- **Lifetime**: each particle has a short life (~0.1–0.6s); over its life move it by its velocity (add gravity for debris/blood), fade or shrink it out, then free it (per-particle fade/shrink needs `Sprite`s or a custom shader — see below).
 
 The pool's whole point is **no per-event allocation**: allocate the geometry buffers once and only rewrite their contents each frame. A `Points`-based burst:
 
 ```typescript
 const MAX = 200
-const PARKED_Y = -1e4 // off-screen: unused and dead particles sit here so they never render
+const PARKED_Y = -1e4 // park unused/dead particles here, off-screen below the scene
 const positions = new Float32Array(MAX * 3)
 for (let i = 0; i < MAX; i++) positions[i * 3 + 1] = PARKED_Y // park the whole pool until used — the buffer is zero-filled, so otherwise all MAX points render as a bright additive blob at the origin
 const geometry = new THREE.BufferGeometry()
@@ -73,7 +73,7 @@ function update(delta: number) {
 }
 ```
 
-This minimal `Points` version **pops** each particle at end of life (parks it off-screen). Smooth per-particle fade or shrink isn't possible with a shared `PointsMaterial`; it needs a custom shader with a per-vertex alpha/size attribute, or `Sprite`s, which each carry their own `material.opacity` and `scale`.
+This minimal `Points` version **pops** each particle at end of life by parking it far below the scene — off-screen for a roughly horizontal game camera, but a top-down or steeply-pitched camera can still see the park spot (additive points with `depthWrite: false` don't truly switch off just by moving). Smooth per-particle fade or shrink — and a view-independent hide (size/alpha → 0) — isn't possible with a shared `PointsMaterial`; it needs a custom shader with a per-vertex alpha/size attribute, or `Sprite`s, which each carry their own `material.opacity` and `scale`.
 
 ## Match the effect to the event
 - **Muzzle flash**: one short additive sprite at the barrel for a few frames.

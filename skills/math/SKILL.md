@@ -54,7 +54,7 @@ label.quaternion.copy(camera.quaternion)
 
 This silently breaks anything sized from that number — the classic case is scaling one character to match another's measured height and getting a giant: the measured one was live/animating (inflated) while the other was measured fresh (clean). To get a character's real size:
 
-- measure the **`SkinnedMesh`'s `geometry.boundingBox`** (the stable bind-pose mesh extent: `mesh.geometry.computeBoundingBox()`, then read `mesh.geometry.boundingBox`) — but this is in **local** geometry space, so multiply by the mesh's world scale for world units when the model was imported scaled, or
+- measure the **`SkinnedMesh`'s `geometry.boundingBox`** (the stable bind-pose mesh extent: `mesh.geometry.computeBoundingBox()`, then read `mesh.geometry.boundingBox`) — but this box is in **local** geometry space; for world-unit height transform it by the mesh's world matrix (`mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrixWorld)`), which folds in scale from parent nodes — where a glTF's import scale usually lives. Reading it raw, or multiplying only by `mesh.scale`, measures a scaled character wrong, or
 - measure the **raw model once on load**, before it is rigged/animated/wrapped, or
 - avoid measuring entirely and size against a **known constant** (a target character height you decide).
 
