@@ -28,6 +28,12 @@ ui.setBuffer(buffer)
 ui.play()
 ```
 
+## Mix balance
+
+Coverage should not make the mix tiring. Frequent cues and looping beds need quieter defaults than rare confirmation sounds, because repetition makes even correct sounds feel loud. Footsteps, ambient wind, engine hums, drones, and other near-constant sounds usually sit as low texture; they should confirm motion or mood without competing with weapons, hits, UI confirmations, or voice. Start conservative on repeated sounds, then raise only when the game loses readable feedback.
+
+Prefer positional playback for world sounds whose source is visible or meaningful in space: enemy shots, enemy deaths, impacts, doors, machines, pickups in the world, and nearby hazards. Non-positional playback fits UI, music beds, narration, and player-only feedback that should stay stable in the listener's head. If a world sound must be non-positional for technical reasons, lower it and document the tradeoff so it does not read as a global alert.
+
 ## Overlap and browser policy
 - One `Audio`/`PositionalAudio` node can't play twice at once (`.play()` on an already-playing node warns and no-ops). For rapid sounds (gunfire, footsteps) keep a small pool of nodes or create a fresh node per shot from the shared buffer, so sounds don't cut each other off. A `PositionalAudio` only pans/attenuates while it's parented into the scene graph (`source.add(node)`), so a pooled positional node must stay attached — plain non-positional `Audio` has no such requirement.
 - Browsers block audio until a user gesture. Resume on the first click/key: `listener.context.resume()`.
