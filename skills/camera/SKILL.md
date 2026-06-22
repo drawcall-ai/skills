@@ -105,17 +105,18 @@ export class ThirdPersonCameraSystem extends createSystem({}) {
 
 ## Rest Position
 
-Smoothly interpolate to rest pose when idle:
+Smoothly interpolate to rest pose when idle. `pitch`/`yaw` are private state of the camera system above, so the rest-lerp belongs *inside* that system's `update` — a separate system can't reach in and mutate them:
 
 ```typescript
-export class CameraRestSystem extends createSystem({}) {
-  private restPitch = 0
-  private restYaw = 0
+// add these fields to the FirstPerson/ThirdPerson camera system:
+private restPitch = 0
+private restYaw = 0
 
-  update() {
-    // TODO: check if player is idle
-    cameraSystem.pitch = MathUtils.lerp(cameraSystem.pitch, this.restPitch, 0.05)
-    cameraSystem.yaw = MathUtils.lerp(cameraSystem.yaw, this.restYaw, 0.05)
+update() {
+  // ... position the camera from this.pitch / this.yaw as above ...
+  if (playerIsIdle) { // TODO: derive idle from input or velocity
+    this.pitch = MathUtils.lerp(this.pitch, this.restPitch, 0.05)
+    this.yaw = MathUtils.lerp(this.yaw, this.restYaw, 0.05)
   }
 }
 ```
