@@ -5,9 +5,15 @@ description: "Cameras for Three.js games — viverse's ready-made character came
 
 # Camera
 
-## For a character: use viverse's `CharacterCameraBehavior`
+A game camera follows a target with clamped pitch+yaw orbit, plus collision and zoom. There is one fork to make first: for a player character, use viverse's ready-made `CharacterCameraBehavior` out of the box; build a camera from scratch only when you need a fully custom rig. Hand-rolling a character camera tends to reproduce the same bugs — yaw-locked (can't aim up/down) or wall-clipping — which the built-in already solves.
 
-For a player character (third- or first-person), prefer viverse's built-in camera behavior over hand-rolling one — it already does a correct orbit on **both** axes (pitch + yaw, clamped), camera collision against the world, and zoom. Hand-rolling is where the usual bugs come from: a camera locked to yaw so you can't aim up/down, or one that clips through walls.
+Every custom rig shares one convention: `camera.rotation.set(pitch, yaw, 0, 'YXZ')`, where positive pitch looks up and positive yaw looks left. The `'YXZ'` Euler order is what makes pitch and yaw compose correctly, so it is stated once here and assumed throughout.
+
+The sections below are: **Recommended: CharacterCameraBehavior** (the built-in for a character), **Building a camera from scratch** (first-person, third-person, and rest-position variants as ECS systems), and **Effects** (screen shake and FOV speed). Cross-references: `@pmndrs/viverse`, and the acta, physics, entity-component-system, and math skills.
+
+## Recommended: CharacterCameraBehavior (for a character)
+
+For a player character, prefer this over hand-rolling. `CharacterCameraBehavior` orbits both axes (pitch and yaw, each clamped), does camera collision against the world, and handles zoom.
 
 ```typescript
 import { CharacterCameraBehavior, FirstPersonCharacterCameraBehavior } from '@pmndrs/viverse'
@@ -18,25 +24,34 @@ const cameraBehavior = new CharacterCameraBehavior() // third-person orbit + col
 cameraBehavior.update(camera, characterModel, delta, (ray, far) => world.raycast(ray, far)?.distance)
 ```
 
-`update(camera, target, deltaTime, raycast?, options?)` is the whole API — there is no `setOptions`; tuning happens through the 5th `options` argument, passed the same shape every frame. It covers `rotation` (`minPitch`/`maxPitch`/`minYaw`/`maxYaw`/`speed`), `zoom` (`minDistance`/`maxDistance`/`speed`), `collision`, and `characterBaseOffset`. The instance also exposes `rotationPitch`, `rotationYaw`, and `zoomDistance` — set these to seed an initial facing or zoom before the first update.
+Call `update` each frame, after moving the character. The raycast callback `(ray, far) => world.raycast(ray, far)?.distance` is what the collision uses to keep the camera out of walls.
 
-`FirstPersonCharacterCameraBehavior` is **not a separate class** — it is a ready-made `options` object you pass as that 5th argument to switch the same behavior into a first-person rig:
+`update(camera, target, deltaTime, raycast?, options?)` is the whole API — there is no `setOptions` method. Tune behavior through the 5th `options` argument, passing the same shape every frame:
+
+- `options.rotation`: `minPitch` / `maxPitch` / `minYaw` / `maxYaw` / `speed`
+- `options.zoom`: `minDistance` / `maxDistance` / `speed`
+- `options.collision`
+- `options.characterBaseOffset`
+
+The instance exposes `rotationPitch`, `rotationYaw`, and `zoomDistance`. Set these to seed the initial facing and zoom before the first `update`.
+
+`FirstPersonCharacterCameraBehavior` is not a separate class — it is a ready-made options object. Pass it as the 5th argument to switch to first-person:
 
 ```typescript
 cameraBehavior.update(camera, characterModel, delta, raycast, FirstPersonCharacterCameraBehavior)
 ```
 
-It composes with `BvhCharacterPhysics` (movement) and Acta (animation) — see the **acta** and **physics** skills. Movement and aiming derive from the camera's facing (`camera.getWorldDirection`), so they include pitch and strafe the correct way; the path of information is input → Acta → physics.
+This composes with `BvhCharacterPhysics` (movement) and Acta (animation) — see the acta and physics skills. Movement and aiming derive from the camera facing via `camera.getWorldDirection` (include pitch and strafe correctly). The information path is: input → Acta → physics.
 
-`characterBaseOffset` is **camera-relative**: its horizontal part is rotated by the camera yaw, so an over-the-shoulder offset like `[0.5, 1.5, 0]` stays over the shoulder *relative to the view* as you orbit, and a purely vertical offset (the default and first-person) is unaffected. You do not need the character to face the camera for the framing to be stable.
+`characterBaseOffset` is camera-relative: its horizontal part is rotated by the camera yaw. An over-the-shoulder offset like `[0.5, 1.5, 0]` therefore stays over the shoulder relative to the view as you orbit, while a purely vertical offset (the default, and the first-person case) is unaffected by yaw. The character need not face the camera for the framing to stay stable.
 
 ## Building a camera from scratch
 
-If you need a fully custom rig, the patterns below build first/third-person cameras as minimal ECS systems — see the entity-component-system skill for the full pattern.
+For a fully custom rig, build first- and third-person cameras as minimal ECS systems — see the entity-component-system skill.
 
-**Convention**: Positive pitch = look up, positive yaw = look left. Use `Euler(pitch, yaw, 0, 'YXZ')` order.
+### First Person Camera
 
-## First Person Camera
+The first-person camera positions itself at the player's head and rotates by accumulated pitch and yaw.
 
 ```typescript
 export class FirstPersonCameraSystem extends createSystem({}) {
@@ -67,9 +82,11 @@ export class FirstPersonCameraSystem extends createSystem({}) {
 }
 ```
 
-## Third Person Camera
+Pitch is clamped to `[-PI/2, PI/2]`; yaw is unclamped (`this.yaw += delta`). Subscriptions pass `{ signal }` for cleanup.
 
-Uses `Spherical` for orbit positioning — see the math skill.
+### Third Person Camera
+
+The third-person camera orbits the player using a `Spherical` — see the math skill.
 
 ```typescript
 export class ThirdPersonCameraSystem extends createSystem({}) {
@@ -103,9 +120,11 @@ export class ThirdPersonCameraSystem extends createSystem({}) {
 }
 ```
 
-## Rest Position
+Pitch is clamped to `[0.1, PI/2]` — note the lower bound differs from first-person's `-PI/2`, keeping the camera from orbiting below the ground. Yaw is unclamped, and subscriptions use the same `{ signal }` pattern.
 
-Smoothly interpolate to rest pose when idle. `pitch`/`yaw` are private state of the camera systems above, so the rest-lerp belongs *inside* the system that owns them — a separate system can't reach in and mutate them:
+### Rest Position
+
+A camera can smoothly interpolate back to a rest pose when the player is idle. Because `pitch` and `yaw` are private state of the camera systems, the rest-lerp belongs inside the system that owns them — a separate system cannot reach in and mutate them.
 
 ```typescript
 // add these fields to the FirstPerson/ThirdPerson camera system:
@@ -123,7 +142,11 @@ update() {
 
 ## Effects
 
+Two effects layer on top of any camera: screen shake and FOV speed.
+
 ### Screen Shake
+
+A burst of decaying random offset applied to the camera position.
 
 ```typescript
 export class ScreenShakeSystem extends createSystem({}) {
@@ -145,7 +168,11 @@ export class ScreenShakeSystem extends createSystem({}) {
 }
 ```
 
+`shake(intensity, duration)` starts a burst. Note the unit handling: `delta` arrives in seconds but `remaining` is tracked in milliseconds, so `update` subtracts `delta * 1000`. The factor `t = remaining / 1000` scales the offset on both x and y so the shake decays over its lifetime.
+
 ### FOV Speed Effect
+
+Widen the field of view as the player moves faster to convey speed.
 
 ```typescript
 export class FOVSpeedSystem extends createSystem({}) {
@@ -160,3 +187,5 @@ export class FOVSpeedSystem extends createSystem({}) {
   }
 }
 ```
+
+Always call `camera.updateProjectionMatrix()` after changing `fov`, or the new value does not take effect.
