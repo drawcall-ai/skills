@@ -25,7 +25,9 @@ The pool's whole point is **no per-event allocation**: allocate the geometry buf
 
 ```typescript
 const MAX = 200
+const PARKED_Y = -1e4 // off-screen: unused and dead particles sit here so they never render
 const positions = new Float32Array(MAX * 3)
+for (let i = 0; i < MAX; i++) positions[i * 3 + 1] = PARKED_Y // park the whole pool until used — the buffer is zero-filled, so otherwise all MAX points render as a bright additive blob at the origin
 const geometry = new THREE.BufferGeometry()
 geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
 
@@ -41,6 +43,7 @@ const material = new THREE.PointsMaterial({
   blending: THREE.AdditiveBlending, depthWrite: false,
 })
 const points = new THREE.Points(geometry, material)
+points.frustumCulled = false // positions change every frame; the cached bounding sphere would cull the whole cloud wrongly
 
 const vel = new Float32Array(MAX * 3)
 const life = new Float32Array(MAX) // seconds remaining; 0 = free
@@ -60,13 +63,17 @@ function update(delta: number) {
   for (let i = 0; i < MAX; i++) {
     if (life[i] <= 0) continue
     life[i] -= delta
+    if (life[i] <= 0) { positions[i * 3 + 1] = PARKED_Y; continue } // died this frame — park it so it stops rendering
+    vel[i * 3 + 1] -= 9.8 * delta // accumulate gravity into velocity so debris accelerates and arcs — folding it straight into position (`(vel - 9.8*delta)*delta`) is a constant, frame-rate-dependent nudge, not a fall
     positions[i * 3] += vel[i * 3] * delta
-    positions[i * 3 + 1] += (vel[i * 3 + 1] - 9.8 * delta) * delta // gravity for debris
+    positions[i * 3 + 1] += vel[i * 3 + 1] * delta
     positions[i * 3 + 2] += vel[i * 3 + 2] * delta
   }
   geometry.attributes.position.needsUpdate = true // the line agents forget — without it nothing moves
 }
 ```
+
+This minimal `Points` version **pops** each particle at end of life (parks it off-screen). Smooth per-particle fade or shrink isn't possible with a shared `PointsMaterial`; it needs a custom shader with a per-vertex alpha/size attribute, or `Sprite`s, which each carry their own `material.opacity` and `scale`.
 
 ## Match the effect to the event
 - **Muzzle flash**: one short additive sprite at the barrel for a few frames.
