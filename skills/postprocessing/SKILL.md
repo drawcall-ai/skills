@@ -77,6 +77,23 @@ composer.addPass(new TransparentToggle(null, hidden, false)) // restore before t
 
 Opaque AO surfaces are unaffected — they still ground objects with contact shadow.
 
+## Shader NaN through bloom (full-screen white flash)
+
+One fragment that writes `NaN` (or `Inf`) into the HDR buffer becomes a full-screen white flash once bloom runs: bloom's mipmap downsample averages that fragment into every coarser mip, so a single poisoned pixel spreads across the whole bloom texture and is then added over the entire frame. The signature is that the flash **disappears without post processing** — with no bloom the bad value stays on its few source pixels and is usually invisible — and that it is a hard-edged, fully opaque white showing no background, appearing only at certain camera angles or positions because the source is view-dependent.
+
+The common source is a GLSL `pow()` whose base is mathematically non-negative but float-rounds just below zero. `pow(x, y)` for `x < 0` is undefined: it returns `NaN` on drivers that implement it as `exp(y * log(x))` and `0` on others, so the flash is **GPU/driver-dependent and may not reproduce on your machine**. A fresnel/rim term is the classic case — facing the surface head-on, `abs(dot(...))` of two normalized vectors rounds to `~1.0000001`, so the base goes negative:
+
+```glsl
+float fres = pow(1.0 - abs(dot(normalize(n), normalize(v))), 1.4);  // NaN risk: base can be < 0
+
+float ndv  = clamp(abs(dot(normalize(n), normalize(v))), 0.0, 1.0); // clamp the base ≥ 0 first
+float fres = pow(1.0 - ndv, 1.4);                                   // safe
+```
+
+Guard every `pow` base this way (`max(0.0, base)`), and any `normalize()` whose input can be the zero vector. Non-NaN overflow smears identically: a value above `HalfFloat`'s max (~65504) becomes `Inf` in the composer's buffer and spreads the same way, so keep emissive/additive output bounded.
+
+To find the source when it won't reproduce locally, render the scene to a `FloatType` render target and scan `readRenderTargetPixels` for `NaN`/`Inf`/huge values; to confirm a suspected material, write `NaN` into one of its color uniforms and verify the whole screen washes white.
+
 ## Output Color Space
 
 New applications should follow a linear workflow for color management and postprocessing supports this automatically. Simply set `WebGLRenderer.outputColorSpace` to `SRGBColorSpace` and postprocessing will follow suit.
