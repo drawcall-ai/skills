@@ -5,9 +5,23 @@ description: "Forward DOM pointer events into a Three.js scene and filter them w
 
 # Pointer Events via `@pmndrs/pointer-events`
 
-## How to use
+`@pmndrs/pointer-events` forwards real input into a Three.js scene so 3D objects fire pointer listeners, filters which objects get hit, and lets you define the shape of the pointer itself.
 
-We can use `forwardHtmlEvents` to forward the html document events into the 3D scene.
+## Overview
+
+The library rests on three pillars:
+
+1. **Forward input in.** `forwardHtmlEvents` brings DOM events into the scene; `forwardObjectEvents` brings events from a surface into a separate portal scene. Each returns an `update()` that runs every frame.
+2. **Filter what's hit.** The `pointerEvents` property (CSS-derived: `none`/`listener`/`auto`) and the `pointerEventsType` property (`all`/`allow`/`deny`/function) decide, per object, which events land.
+3. **Define the pointer.** You can construct your own `Pointer` and choose how its intersection is computed.
+
+These chain together: forwarding produces events that each carry a `pointerType`; filtering decides per object which of those events land; and custom pointers determine how and where intersection is computed. The sections below follow that order — forwarding events into a scene, filtering what gets hit, and custom pointers.
+
+## Forwarding events into a scene
+
+Forwarding installs a source of pointer events on the scene and gives you an `update()` to advance it each frame.
+
+`forwardHtmlEvents` forwards the HTML document's events into the 3D scene. Call it with the DOM target, a camera getter, and the scene — `forwardHtmlEvents(document.body, () => camera, scene)` — and it returns `{ update }`. Call `update()` every frame in the render loop, before `renderer.render(scene, camera)`. Objects then receive events through `addEventListener('pointerover' | 'pointerout', (e: PointerEvent) => ...)`, where the `PointerEvent` type is imported from `@pmndrs/pointer-events` alongside `forwardHtmlEvents`. Each event exposes `e.point` (a vector, with `e.point.toArray()`), and you can attach multiple listeners for the same event type.
 
 ```ts
 import * as THREE from 'three'
@@ -38,7 +52,7 @@ renderer.setAnimationLoop(() => {
 })
 ```
 
-Furthermore, we can also use `forwardObjectEvents` to forward events from e.g. a plane into a separate scene rendered on this plane for building an interactive portal. It has the same shape — pass the surface object, a camera getter, and the portal's scene, and call its `update` each frame:
+`forwardObjectEvents` forwards events from a surface — for example a plane — into a separate scene that is rendered onto that surface, producing an interactive portal. It has the same shape as `forwardHtmlEvents`: pass the surface mesh, a camera getter, and the portal scene. It returns its own `update`, shown here as `updatePortal`, which must be called each frame alongside the main `update()`.
 
 ```ts
 const { update: updatePortal } = forwardObjectEvents(planeMesh, () => portalCamera, portalScene)
@@ -46,22 +60,30 @@ const { update: updatePortal } = forwardObjectEvents(planeMesh, () => portalCame
 updatePortal()
 ```
 
-## Event Filtering
+## Filtering what gets hit
 
-Based on the css `pointer-events` property, the behavior of pointer events can be configured with the values `none`, `listener`, or `auto`.
+Two per-object properties control which events reach an object: `pointerEvents` selects whether the object is targetable at all, and `pointerEventsType` filters by the kind of pointer.
+
+`pointerEvents` is based on the CSS `pointer-events` property and takes `none`, `listener`, or `auto`.
 
 ```js
 object.pointerEvents = 'none'
 ```
 
-The values `none` and `auto` correspond to the css properties, where `none` means that an object is not directly targetted and `auto` means the object is always targetted for events. The additional value `listener`, which is the default value, expresses that the object is only targetted by events if the object has any listeners. In 3D scenes this default is more reasonable than `auto`, which is the default in the web, because 3D scenes often contain semi-transparent content, such as particles, that should not catch pointer events by default.
+- `none` — the object is never directly targeted.
+- `auto` — the object is always targeted for events, matching the CSS property.
+- `listener` — the additional value, and the **default**: the object is targeted only if it has any listeners attached.
 
-In addition to the `pointerEvents` property, each 3D object can also filter events based on the `pointerType` with the `pointerEventsType` property. This property defaults to the value `all`, which expresses that pointer events from pointers of all types should be accepted. To filter specific pointer types, such as `screen-mouse`, which represents a normal mouse used through a 2D screen, `pointerEventsType` can be set to `{ allow: "screen-mouse" }` or `{ deny: "screen-touch" }`. `pointerEventsType`'s `allow` and `deny` accept strings and array of strings. In case more custom logic is needed, `pointerEventsType` also accepts a function. In general the pointer types `screen-touch`, `screen-pen`, `ray`, `grab`, and `touch` are used by default. For pointer events that were forwarded through a portal using `forwardObjectEvents`, their `pointerType` is prefixed with `forward-`, while events forwarded from the dom to the scene are prefixed with `screen-`.
+The `listener` default is more reasonable than `auto` (the web default) for 3D scenes, which often contain semi-transparent content — particles, for instance — that should not catch pointer events by default.
 
-## But wait ... there's more
+Each object can also filter by pointer type through `pointerEventsType`, which defaults to `all` (events from every pointer type are accepted). To filter, set `{ allow: "screen-mouse" }` or `{ deny: "screen-touch" }` (`screen-mouse` is a normal mouse acting through a 2D screen). Both `allow` and `deny` accept a string or an array of strings, and `pointerEventsType` also accepts a function for custom logic.
 
-Create your own `Pointer` that can, for example, allow to make first person controls interact with their environment by placing the pointer inside the camera or something else. These `Pointer` can use a normal `Ray` for intersection, or a set of `Lines`, or even a `Sphere`, for grab and touch events.
+The pointer types used by default are `screen-touch`, `screen-pen`, `ray`, `grab`, and `touch`. Events forwarded from the DOM carry a `pointerType` prefixed `screen-`, and events forwarded through a portal via `forwardObjectEvents` carry a `pointerType` prefixed `forward-`.
+
+## Custom pointers
+
+You can create your own `Pointer` — for example, to let first-person controls interact with their environment by placing the pointer inside the camera, or somewhere else entirely. A custom `Pointer` can use a normal `Ray` for intersection, a set of `Lines`, or a `Sphere` for grab and touch events.
 
 ## Pitfalls
 
-The `pointerEvents` attribute of any Mesh/Object3D/... will not be cloned when cloning the object.
+The `pointerEvents` attribute of a `Mesh`/`Object3D` is not cloned when the object is cloned; reapply it on the clone.
