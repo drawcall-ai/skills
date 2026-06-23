@@ -1,6 +1,6 @@
 ---
 name: actions
-description: "Map player input (keyboard, mouse, touch, gamepad) to game logic with the @pmndrs/viverse action/binding system. Use when building movement controls, input handling, or custom state/event actions for a Three.js game."
+description: "Map player input (keyboard, mouse, touch, gamepad) to game logic with the @pmndrs/viverse action/binding system. Use when building movement controls, input handling, or custom state/event actions for a Three.js game, or when controls must change across game modes (menu, play, pause, cutscene) — e.g. pointer-lock controls wrongly stay live during a menu and a button click locks the pointer."
 ---
 
 # Actions and Action Bindings with `@pmndrs/viverse`
@@ -83,6 +83,8 @@ import { PointerLockRotateZoomActionBindings } from '@pmndrs/viverse'
 const mouse = new PointerLockRotateZoomActionBindings(document.body, abortController.signal)
 mouse.lockOnClick = true
 ```
+
+With `lockOnClick`, a click anywhere on the target locks the pointer — so this binding must not be live while the player needs the cursor for menus or HUD buttons, or the menu becomes unusable. See [Scope controls to the active mode](#scope-controls-to-the-active-mode).
 
 #### Consuming Rotation Deltas
 
@@ -221,6 +223,16 @@ const keyboard = new KeyboardLocomotionActionBindings(document.body, abortContro
 // Clean up all bindings at once
 abortController.abort()
 ```
+
+## Scope controls to the active mode
+
+A game has modes — a menu, active play, a pause screen, a cutscene, a game-over screen — and the controls that are live must match the current mode. The cleanest way to guarantee that is to give each mode its own `AbortController` (see [Lifecycle](#lifecycle)): entering a mode aborts the previous mode's controller, tearing down all of its bindings and subscriptions at once, and constructs the bindings the new mode needs. Controls that don't exist can't misfire, which is a stronger guarantee than disabling them with a flag.
+
+The recurring failure is leaving gameplay controls live in a mode that doesn't use them. A `PointerLockRotateZoomActionBindings` with `lockOnClick = true` constructed at startup and never torn down grabs the pointer the moment the player clicks a menu button, making the menu unusable. The fix is not a special case for that button — it is that the menu mode constructs no gameplay controls at all, so the lock binding exists only once play begins. The same shape makes a cutscene keep responding to WASD and mouse-look when the play mode's bindings were left live; the cutscene mode should own no player controls.
+
+When a single mode genuinely needs both live controls and clickable DOM UI — a HUD button during play — the UI interaction must not reach the listener that locks the pointer. A lock-on-click listener on `document.body` fires for clicks anywhere, because the event bubbles up to it. Pass the **canvas element** as the binding's DOM target instead of `document.body`, so a click on overlay UI outside the canvas never reaches it; or call `stopPropagation()` in the UI's `pointerdown` handler. (For clickable UI inside the 3D scene, filtering is per-object — see the `pointer-events` skill.)
+
+Controls are rarely the only thing a mode owns: a cutscene or pause usually also freezes the simulation (stop and resume the relevant systems — see the `ecs` skill) and may hand the camera to a different owner (see the `camera` skill). Switch everything a mode owns together on the transition — the bug is always the one concern left live from the previous mode.
 
 ## Limitations — filling gaps
 
